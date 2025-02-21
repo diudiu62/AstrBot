@@ -551,8 +551,35 @@ CONFIG_METADATA_2 = {
                         "fishaudio-tts-character": "可莉",
                         "timeout": "20",
                     },
+                    "cosyvoice_tts(API)": {
+                        "id": "cosyvoice_tts",
+                        "type": "cosyvoice_tts_api",
+                        "enable": False,
+                        "api_key": "（默认空）",
+                        "api_base": "http://192.168.0.111",
+                        "mode_uid": "",
+                        "prompt_text": "",
+                        "prompt_file": "",
+                        "timeout": "20",
+                    },
                 },
                 "items": {
+                    "mode_uid": {
+                        "description": "音频生成方式",
+                        "type": "string",
+                        "options": ["zero_shot"],
+                        "hint": "zero_shot: 3s克隆",
+                    },
+                    "prompt_text": {
+                        "description": "克隆音频文本",
+                        "type": "string",
+                        "hint": "要克隆的音频里面的字幕文本。",
+                    },
+                    "prompt_file": {
+                        "description": "克隆音频文件路径",
+                        "type": "string",
+                        "hint": "音频文件放到项目根目录下的 data/audio/xxxx.wav ",
+                    },
                     "timeout": {
                         "description": "超时时间",
                         "type": "int",
