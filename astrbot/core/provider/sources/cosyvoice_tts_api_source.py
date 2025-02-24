@@ -1,7 +1,7 @@
 '''
 Author: diudiu62
 Date: 2025-02-20 16:42:49
-LastEditTime: 2025-02-24 17:29:55
+LastEditTime: 2025-02-24 17:55:47
 '''
 import os
 import uuid
@@ -27,7 +27,6 @@ class CosyVoiceAPIError(Exception):
 class ProviderCosyVoiceTTSAPI(TTSProvider):
     def __init__(self, provider_config: dict, provider_settings: dict) -> None:
         super().__init__(provider_config, provider_settings)
-        self.set_model(provider_config.get("model", None))
         # 获取API相关配置
         self.cosyvoice_tts_api = provider_config.get("cosyvoice_tts_api", "http://localhost:50000")
         self.prompt_text = provider_config.get("prompt_text", "")
