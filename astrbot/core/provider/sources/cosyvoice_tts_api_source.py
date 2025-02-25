@@ -1,11 +1,11 @@
 '''
 Author: diudiu62
 Date: 2025-02-20 16:42:49
-LastEditTime: 2025-02-24 17:03:47
+LastEditTime: 2025-02-24 17:55:47
 '''
-from datetime import datetime
 import os
-import wave
+import uuid
+import asyncio
 from pydantic import BaseModel
 from httpx import AsyncClient
 from ..provider import TTSProvider
@@ -51,8 +51,7 @@ class ProviderCosyVoiceTTSAPI(TTSProvider):
 
     async def get_audio(self, text: str) -> str:
         """获取合成语音的音频文件路径。"""
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # 获取当前时间戳
-        path = f"data/temp/cosyvoice_tts_api_{timestamp}.wav"  # 形成新的路径格式
+        path = f"data/temp/cosyvoice_tts_api_{uuid.uuid4()}.wav"
         request = await self._generate_request(text)
 
         async with AsyncClient(base_url=self.cosyvoice_tts_api) as client:
@@ -66,11 +65,9 @@ class ProviderCosyVoiceTTSAPI(TTSProvider):
 
             # 检查音频文件长度是否小于1秒，如果小于，则添加静音
             if await self.get_audio_length(path) < 1:
-                new_path = await self.add_silence_to_audio(path, 1)  # 添加1秒静音
-                os.remove(path)  # 删除原音频文件
-                return new_path
+                return await self.add_silence_to_audio(path, 1)  # 添加1秒静音
             return path
-        
+
     async def _make_api_call(self, client: AsyncClient, request: CosyVoiceAudioRequest):
         """向API发送请求并返回响应。"""
         return await client.post(
@@ -103,24 +100,23 @@ class ProviderCosyVoiceTTSAPI(TTSProvider):
 
     async def get_audio_length(self, file_path: str) -> float:
         """获取音频文件的持续时间（秒）。"""
-        with wave.open(file_path, 'rb') as wf:  # 这里使用 wave 库
-            duration = wf.getnframes() / wf.getframerate()  # 获取总帧数/采样率
-        return duration
+        process = await asyncio.create_subprocess_exec(
+            'ffprobe', '-v', 'error', '-show_entries', 'format=duration',
+            '-of', 'default=noprint_wrappers=1:nokey=1', file_path,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, _ = await process.communicate()
+        return float(stdout)
 
-    async def add_silence_to_audio(self, input_path: str, silence_duration: float) -> str:
-        """在 WAV 文件末尾添加静音并返回新文件路径。"""
-        output_path = f"{input_path}.silence.wav"
-
-        # 打开原音频文件
-        with wave.open(input_path, 'rb') as wf:
-            params = wf.getparams()  # 获取音频参数
-            num_frames = int(silence_duration * params.framerate)  # 计算静音帧数
-            silence_frames = b'\x00' * num_frames * params.nchannels * 2  # 生成静音数据，2 字节为采样位深
-
-            # 创建写入的新音频文件
-            with wave.open(output_path, 'wb') as out_wf:
-                out_wf.setparams(params)  # 设置与原文件相同的参数
-                out_wf.writeframes(wf.readframes(wf.getnframes()))  # 写入原音频数据
-                out_wf.writeframes(silence_frames)  # 添加静音
-
-        return output_path
+    async def add_silence_to_audio(self, file_path: str, duration: float) -> str:
+        """使用ffmpeg为音频文件添加静音。"""
+        new_path = f"{file_path}.silence.wav"
+        process = await asyncio.create_subprocess_exec(
+            'ffmpeg', '-i', file_path,
+            '-af', f'apad=pad_dur={duration}', new_path,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        await process.communicate()
+        return new_path
