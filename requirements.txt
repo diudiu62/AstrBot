@@ -22,3 +22,7 @@ lark-oapi
 ormsgpack
 cryptography
 qrcode
+
+funasr_onnx
+torchaudio
+torch
