@@ -1,7 +1,7 @@
 '''
 Author: diudiu62
 Date: 2025-02-20 16:42:49
-LastEditTime: 2025-02-25 14:30:22
+LastEditTime: 2025-02-25 14:39:16
 '''
 from datetime import datetime
 import os
@@ -90,7 +90,7 @@ class ProviderCosyVoiceTTSAPI(TTSProvider):
         if not os.path.exists(file_path):
             raise CosyVoiceAPIError("指定的音频文件不存在。")
         
-        print(f"上传音频文件: {file_path}")
+        logger.debug(f"上传音频文件: {file_path}")
 
         async with AsyncClient(base_url=self.cosyvoice_tts_api) as client:
             with open(file_path, 'rb') as f:
