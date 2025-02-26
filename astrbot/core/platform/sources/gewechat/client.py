@@ -4,6 +4,7 @@ import quart
 import base64
 import datetime
 import re
+import os
 from astrbot.api.platform import AstrBotMessage, MessageMember, MessageType
 from astrbot.api.message_components import Plain, Image, At, Record
 from astrbot.api import logger, sp
@@ -62,6 +63,8 @@ class GewechatClient():
         self.multimedia_downloader = None
 
         self.userrealnames = {}
+        
+        self.stop = False
 
         self._contact_api = None
         self._download_api = None
@@ -248,7 +251,7 @@ class GewechatClient():
         )
     
     async def shutdown_trigger_placeholder(self):
-        while not self.event_queue.closed:
+        while not self.event_queue.closed and not self.stop:
             await asyncio.sleep(1)
         logger.info("gewechat 适配器已关闭。")
             
