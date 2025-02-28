@@ -104,7 +104,8 @@ class ProviderManager():
         kdb_cfg = config.get("knowledge_db", {})
         if kdb_cfg and len(kdb_cfg):
             self.curr_kdb_name = list(kdb_cfg.keys())[0]
-        
+    
+
     async def initialize(self):
         for provider_config in self.providers_config:
             await self.load_provider(provider_config)
@@ -143,6 +144,8 @@ class ProviderManager():
                     from .sources.dashscope_source import ProviderDashscope as ProviderDashscope
                 case "googlegenai_chat_completion":
                     from .sources.gemini_source import ProviderGoogleGenAI as ProviderGoogleGenAI
+                case "sensevoice_stt_selfhost":
+                    from .sources.sensevoice_selfhosted_source import ProviderSenseVoiceSTTSelfHost as ProviderSenseVoiceSTTSelfHost
                 case "openai_whisper_api":
                     from .sources.whisper_api_source import ProviderOpenAIWhisperAPI as ProviderOpenAIWhisperAPI
                 case "openai_whisper_selfhost":
@@ -220,7 +223,7 @@ class ProviderManager():
             
             self.inst_map[provider_config['id']] = inst
         except Exception as e:
-            traceback.print_exc()
+            logger.error(traceback.format_exc())
             logger.error(f"实例化 {provider_config['type']}({provider_config['id']}) 提供商适配器失败：{e}")
 
     async def reload(self, provider_config: dict):

@@ -2,7 +2,7 @@
 如需修改配置，请在 `data/cmd_config.json` 中修改或者在管理面板中可视化修改。
 """
 
-VERSION = "3.4.31"
+VERSION = "3.4.32"
 DB_PATH = "data/data_v3.db"
 
 # 默认配置
@@ -588,10 +588,10 @@ CONFIG_METADATA_2 = {
                         "enable": False,
                         "id": "sensevoice",
                         "type": "sensevoice_stt_selfhost",
-                        "stt_model": "icc/SenseVoiceSmall",
+                        "stt_model": "iic/SenseVoiceSmall",
                         "is_emotion": False,
                     },
-                    "openai_tts(API)": {
+                    "OpenAI_TTS(API)": {
                         "id": "openai_tts",
                         "type": "openai_tts_api",
                         "enable": False,
@@ -626,7 +626,7 @@ CONFIG_METADATA_2 = {
                     "sensevoice_hint": {
                         "description": "部署SenseVoice",
                         "type": "string",
-                        "hint": "启用前请 pip 安装 funasr_onnx、torchaudio、torch 库（默认使用CPU，大约下载 1 GB），并且安装 ffmpeg。否则将无法正常转文字。",
+                        "hint": "启用前请 pip 安装 funasr、funasr_onnx、torchaudio、torch、modelscope、jieba 库（默认使用CPU，大约下载 1 GB），并且安装 ffmpeg。否则将无法正常转文字。",
                         "obvious_hint": True,
                     },
                     "is_emotion": {
