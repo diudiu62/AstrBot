@@ -627,6 +627,17 @@ CONFIG_METADATA_2 = {
                         "fishaudio-tts-character": "可莉",
                         "timeout": "20",
                     },
+                    "cosyvoice_tts(API)": {
+                        "id": "cosyvoice_tts",
+                        "type": "cosyvoice_tts_api",
+                        "enable": False,
+                        "api_key": "（默认空）",
+                        "cosyvoice_tts_api": "http://192.168.0.111",
+                        "mode_uid": "",
+                        "prompt_text": "",
+                        "prompt_file": "",
+                        "timeout": "20",
+                    },
                 },
                 "items": {
                     "sensevoice_hint": {
@@ -669,6 +680,28 @@ CONFIG_METADATA_2 = {
                             "task-workflow",
                         ],
                         "obvious_hint": True,
+                    },
+                    "cosyvoice_tts_api": {
+                        "description": "cosyvoice自定义接口",
+                        "type": "string",
+                        "hint": "该接口为cosyvoice自定义接口，需要自行部署cosyvoice。接口文件：https://github.com/diudiu62/CosyVoice-api.git",
+                        "obvious_hint": True,
+                    },
+                    "mode_uid": {
+                        "description": "音频生成方式",
+                        "type": "string",
+                        "options": ["zero_shot"],
+                        "hint": "zero_shot: 3s克隆",
+                    },
+                    "prompt_text": {
+                        "description": "克隆音频文本",
+                        "type": "string",
+                        "hint": "要克隆的音频里面的字幕文本。",
+                    },
+                    "prompt_file": {
+                        "description": "克隆音频文件名称",
+                        "type": "string",
+                        "hint": "音频文件放到项目根目录下的 data/audio_templates/xxxx.wav，则填写 xxxx.wav",
                     },
                     "timeout": {
                         "description": "超时时间",
