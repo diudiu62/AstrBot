@@ -8,7 +8,7 @@ from astrbot.api import logger
 from astrbot.core.platform.astr_message_event import MessageSesion
 from ...register import register_platform_adapter
 from .gewechat_event import GewechatPlatformEvent
-from .client import SimpleGewechatClient
+from .client import GewechatClient
 from astrbot.core.message.components import Plain
 
 if sys.version_info >= (3, 12):
@@ -27,7 +27,8 @@ class GewechatPlatformAdapter(Platform):
         self.test_mode = os.environ.get('TEST_MODE', 'off') == 'on'
         self.client = None
         
-        self.client = SimpleGewechatClient(
+
+        self.client = GewechatClient(
             self.config['base_url'],
             self.config['nickname'],
             self.config['host'],
@@ -39,6 +40,7 @@ class GewechatPlatformAdapter(Platform):
             await self.handle_msg(abm)
             
         self.client.on_event_received = on_event_received
+        
     
     @override
     async def send_by_session(self, session: MessageSesion, message_chain: MessageChain):
@@ -60,6 +62,7 @@ class GewechatPlatformAdapter(Platform):
             "基于 gewechat 的 Wechat 适配器",
         )
 
+    @override
     async def terminate(self):
         self.client.stop = True
         await asyncio.sleep(1)
