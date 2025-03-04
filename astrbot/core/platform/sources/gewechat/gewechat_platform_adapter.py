@@ -95,5 +95,5 @@ class GewechatPlatformAdapter(Platform):
 
         self.commit_event(message_event)
 
-    def get_client(self) -> SimpleGewechatClient:
+    def get_client(self) -> GewechatClient:
         return self.client
