@@ -2,7 +2,7 @@
 如需修改配置，请在 `data/cmd_config.json` 中修改或者在管理面板中可视化修改。
 """
 
-VERSION = "3.4.34"
+VERSION = "3.4.35"
 DB_PATH = "data/data_v3.db"
 
 # 默认配置
@@ -463,6 +463,16 @@ CONFIG_METADATA_2 = {
                         "api_base": "http://localhost:11434/v1",
                         "model_config": {
                             "model": "llama3.1-8b",
+                        },
+                    },
+                    "LM_Studio": {
+                        "id": "lm_studio",
+                        "type": "openai_chat_completion",
+                        "enable": True,
+                        "key": ["lmstudio"],
+                        "api_base": "http://localhost:1234/v1",
+                        "model_config": {
+                            "model": "llama-3.1-8b",
                         },
                     },
                     "Gemini(OpenAI兼容)": {
