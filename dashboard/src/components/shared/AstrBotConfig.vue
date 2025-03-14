@@ -1,6 +1,6 @@
 <template>
     <div style="margin-bottom: 6px;" v-if="iterable && metadata[metadataKey]?.type === 'object'">
-        <v-list-item-title>
+        <v-list-item-title style="font-weight: bold;">
             {{ metadata[metadataKey]?.description }} ({{ metadataKey }})
             <v-chip color="primary" label size="x-small" class="mb-1">
                 object
@@ -14,7 +14,7 @@
     </div>
 
     <v-card-text style="padding: 12px;">
-        <div v-for="(index, key) in iterable" :key="key" style="margin-bottom: 0.5px;"
+        <div v-for="(val, key, index) in iterable" :key="key" style="margin-bottom: 0.5px;"
             v-if="metadata[metadataKey]?.type === 'object' || metadata[metadataKey]?.config_template">
 
             <div v-if="metadata[metadataKey].items[key]?.type === 'object'" style="padding-left: 16px;">
@@ -25,10 +25,10 @@
                 </div>
             </div>
 
-            <v-row v-else>
+            <v-row v-else style="margin: 0;">
                 <v-col cols="6">
                     <v-list-item>
-                        <v-list-item-title style="font-size: 14px;">
+                        <v-list-item-title style="font-size: 14px; font-weight: bold;">
                             {{ metadata[metadataKey].items[key]?.description + '(' + key + ')' }}
                             <v-chip v-if="!metadata[metadataKey].items[key]?.invisible" color="primary" label
                                 size="x-small" class="mb-1">{{
@@ -51,8 +51,7 @@
                             v-if="metadata[metadataKey].items[key]?.options && !metadata[metadataKey].items[key]?.invisible"
                             v-model="iterable[key]" variant="outlined"
                             :items="metadata[metadataKey].items[key]?.options" dense
-                            :disabled="metadata[metadataKey].items[key]?.readonly" density="compact"
-                            flat hide-details
+                            :disabled="metadata[metadataKey].items[key]?.readonly" density="compact" flat hide-details
                             single-line></v-select>
                         <v-text-field
                             v-else-if="metadata[metadataKey].items[key]?.type === 'string' && !metadata[metadataKey].items[key]?.invisible"
@@ -60,17 +59,14 @@
                             single-line></v-text-field>
                         <v-text-field
                             v-else-if="(metadata[metadataKey].items[key]?.type === 'int' || metadata[metadataKey].items[key]?.type === 'float') && !metadata[metadataKey].items[key]?.invisible"
-                            v-model="iterable[key]" variant="outlined" dense density="compact"
-                            flat hide-details
+                            v-model="iterable[key]" variant="outlined" dense density="compact" flat hide-details
                             single-line></v-text-field>
                         <v-textarea
                             v-else-if="metadata[metadataKey].items[key]?.type === 'text' && !metadata[metadataKey].items[key]?.invisible"
-                            v-model="iterable[key]" variant="outlined" dense
-                            flat hide-details
-                            single-line></v-textarea>
+                            v-model="iterable[key]" variant="outlined" dense flat hide-details single-line></v-textarea>
                         <v-switch
                             v-else-if="metadata[metadataKey].items[key]?.type === 'bool' && !metadata[metadataKey].items[key]?.invisible"
-                            v-model="iterable[key]" color="primary"></v-switch>
+                            v-model="iterable[key]" color="primary" hide-details></v-switch>
                         <ListConfigItem
                             v-else-if="metadata[metadataKey].items[key]?.type === 'list' && !metadata[metadataKey].items[key]?.invisible"
                             :value="iterable[key]" />
@@ -80,6 +76,8 @@
                         <v-text-field v-model="iterable[key]" :label="key" variant="outlined" dense></v-text-field>
                     </div>
                 </v-col>
+                <v-divider class="mb-4" style="border-color: #ccc; margin-left: -18px; margin-right: -18px;"
+                    v-if="index !== Object.keys(iterable).length - 1"></v-divider>
             </v-row>
 
         </div>
@@ -88,7 +86,7 @@
             <v-row>
                 <v-col cols="6">
                     <v-list-item>
-                        <v-list-item-title style="font-size: 14px;">
+                        <v-list-item-title style="font-size: 14px; font-weight: bold">
                             {{ metadata[metadataKey]?.description + '(' + metadataKey + ')' }}
                             <v-chip v-if="!metadata[metadataKey]?.invisible" color="primary" label size="x-small"
                                 class="mb-1">{{
@@ -125,6 +123,8 @@
                     </div>
                 </v-col>
             </v-row>
+
+            <v-divider class="mb-4" style="border-color: #ddd; margin-left: -18px; margin-right: -18px;"></v-divider>
         </div>
     </v-card-text>
 </template>
