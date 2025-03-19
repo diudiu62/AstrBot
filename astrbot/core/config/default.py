@@ -2,7 +2,7 @@
 如需修改配置，请在 `data/cmd_config.json` 中修改或者在管理面板中可视化修改。
 """
 
-VERSION = "3.4.38"
+VERSION = "3.4.39"
 DB_PATH = "data/data_v3.db"
 
 # 默认配置
@@ -85,7 +85,7 @@ DEFAULT_CONFIG = {
         "enable": True,
         "username": "astrbot",
         "password": "77b90590a8945a7d36c963981a307dc9",
-        "host": "127.0.0.1",
+        "host": "0.0.0.0",
         "port": 6185,
     },
     "platform": [],
@@ -581,7 +581,7 @@ CONFIG_METADATA_2 = {
                         "dify_api_type": "chat",
                         "dify_api_key": "",
                         "dify_api_base": "https://api.dify.ai/v1",
-                        "dify_workflow_output_key": "",
+                        "dify_workflow_output_key": "astrbot_wf_output",
                         "dify_query_input_key": "astrbot_text_query",
                         "variables": {},
                         "timeout": 60,
