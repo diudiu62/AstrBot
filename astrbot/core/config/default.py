@@ -605,6 +605,15 @@ CONFIG_METADATA_2 = {
                         "stt_model": "iic/SenseVoiceSmall",
                         "is_emotion": False,
                     },
+                    "cosyvoice": {
+                        "enable": False,
+                        "id": "cosyvoice",
+                        "cosyvoice_tts_api": "http://127.0.0.1:5000",
+                        "mode_uid": "zero_shot",
+                        "prompt_text": "",
+                        "prompt_file": "",
+                        "timeout": 120,
+                    },
                     "OpenAI_TTS(API)": {
                         "id": "openai_tts",
                         "type": "openai_tts_api",
@@ -643,6 +652,25 @@ CONFIG_METADATA_2 = {
                     },
                 },
                 "items": {
+                    "cosyvoice_tts_api": {
+                        "description": "部署cosyvoice",
+                        "type": "string"
+                    },
+                    "mode_uid": {
+                        "description": "推理方式",
+                        "type": "string",
+                        "hint": "系统音色：sft | 3秒克隆：zero_shot | 自然语言：",
+                    },
+                    "prompt_text": {
+                        "description": "克隆音频文案",
+                        "type": "string",
+                        "hint": "克隆音频里的文本内容",
+                    },
+                    "prompt_file": {
+                        "description": "克隆音频文件",
+                        "type": "string",
+                        "hint": "克隆音频，wav格式",
+                    },
                     "sensevoice_hint": {
                         "description": "部署SenseVoice",
                         "type": "string",
