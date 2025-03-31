@@ -635,6 +635,16 @@ CONFIG_METADATA_2 = {
                         "stt_model": "iic/SenseVoiceSmall",
                         "is_emotion": False,
                     },
+                    "cosyvoice": {
+                        "enable": False,
+                        "id": "cosyvoice",
+                        "type": "cosyvoice_tts_selfhost",
+                        "cosyvoice_tts_api": "http://127.0.0.1:5000",
+                        "mode_uid": "zero_shot",
+                        "prompt_text": "",
+                        "prompt_file": "",
+                        "timeout": 120,
+                    },
                     "OpenAI_TTS(API)": {
                         "id": "openai_tts",
                         "type": "openai_tts_api",
@@ -673,35 +683,6 @@ CONFIG_METADATA_2 = {
                     },
                 },
                 "items": {
-                    "gm_resp_image_modal": {
-                        "description": "启用图片模态",
-                        "type": "bool",
-                        "hint": "启用后，将支持返回图片内容。需要模型支持，否则会报错。具体支持模型请查看 Google Gemini 官方网站。温馨提示，如果您需要生成图片，请关闭 `启用群员识别` 配置获得更好的效果。",
-                    },
-                    "rag_options": {
-                        "description": "RAG 选项",
-                        "type": "object",
-                        "hint": "检索知识库设置, 非必填。仅 Agent 应用类型支持(智能体应用, 包括 RAG 应用)",
-                        "items": {
-                            "pipeline_ids": {
-                                "description": "知识库 ID 列表",
-                                "type": "list",
-                                "items": {"type": "string"},
-                                "hint": "对指定知识库内所有文档进行检索, 前往 https://bailian.console.aliyun.com/ 数据应用->知识索引创建和获取 ID。",
-                            },
-                            "file_ids": {
-                                "description": "非结构化文档 ID, 传入该参数将对指定非结构化文档进行检索。",
-                                "type": "list",
-                                "items": {"type": "string"},
-                                "hint": "对指定非结构化文档进行检索。前往 https://bailian.console.aliyun.com/ 数据管理创建和获取 ID。",
-                            },
-                            "output_reference": {
-                                "description": "是否输出知识库/文档的引用",
-                                "type": "bool",
-                                "hint": "在每次回答尾部加上引用源。默认为 False。",
-                            },
-                        },
-                    },
                     "sensevoice_hint": {
                         "description": "部署SenseVoice",
                         "type": "string",
