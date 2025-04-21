@@ -3,6 +3,7 @@ import datetime
 import builtins
 import traceback
 import re
+import zoneinfo
 import astrbot.api.star as star
 import astrbot.api.event.filter as filter
 from astrbot.api.event import AstrMessageEvent, MessageEventResult
@@ -22,7 +23,6 @@ from astrbot.core.config.default import VERSION
 from .long_term_memory import LongTermMemory
 from astrbot.core import logger
 from astrbot.api.message_components import Plain, Image, Reply
-
 from typing import Union
 
 
@@ -39,7 +39,12 @@ class Main(star.Star):
         self.prompt_prefix = cfg["provider_settings"]["prompt_prefix"]
         self.identifier = cfg["provider_settings"]["identifier"]
         self.enable_datetime = cfg["provider_settings"]["datetime_system_prompt"]
-
+        self.timezone = cfg.get("timezone")
+        if not self.timezone:
+            # 系统默认时区
+            self.timezone = None
+        else:
+            logger.info(f"Timezone set to: {self.timezone}")
         self.ltm = None
         if (
             self.context.get_config()["provider_ltm_settings"]["group_icl_enable"]
@@ -875,8 +880,9 @@ UID: {user_id} 此 ID 可用于设置管理员。
         provider = self.context.get_using_provider()
         if provider and provider.meta().type == "dify":
             assert isinstance(provider, ProviderDify)
-            await provider.api_client.delete_chat_conv(message.unified_msg_origin)
-            provider.conversation_ids.pop(message.unified_msg_origin, None)
+            dify_cid = provider.conversation_ids.pop(message.unified_msg_origin, None)
+            if dify_cid:
+                await provider.api_client.delete_chat_conv(message.unified_msg_origin, dify_cid)
             message.set_result(
                 MessageEventResult().message(
                     "删除当前对话成功。不再处于对话状态，使用 /switch 序号 切换到其他对话或 /new 创建。"
@@ -969,7 +975,8 @@ UID: {user_id} 此 ID 可用于设置管理员。
         if len(l) == 1:
             message.set_result(
                 MessageEventResult()
-                .message(f"""[Persona]
+                .message(
+                    f"""[Persona]
 
 - 人格情景列表: `/persona list`
 - 设置人格情景: `/persona 人格`
@@ -980,7 +987,8 @@ UID: {user_id} 此 ID 可用于设置管理员。
 当前对话 {curr_cid_title} 的人格情景: {curr_persona_name}
 
 配置人格情景请前往管理面板-配置页
-""")
+"""
+                )
                 .use_t2i(False)
             )
         elif l[1] == "list":
@@ -1190,11 +1198,20 @@ UID: {user_id} 此 ID 可用于设置管理员。
             user_info = f"\n[User ID: {user_id}, Nickname: {user_nickname}]\n"
             req.prompt = user_info + req.prompt
 
+        # 启用附加时间戳
         if self.enable_datetime:
-            # Including timezone
-            current_time = (
-                datetime.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M (%Z)")
-            )
+            current_time = None
+            if self.timezone:
+                # 启用时区
+                try:
+                    now = datetime.datetime.now(zoneinfo.ZoneInfo(self.timezone))
+                    current_time = now.strftime("%Y-%m-%d %H:%M (%Z)")
+                except Exception as e:
+                    logger.error(f"时区设置错误: {e}, 使用本地时区")
+            if not current_time:
+                current_time = (
+                    datetime.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M (%Z)")
+                )
             req.system_prompt += f"\nCurrent datetime: {current_time}\n"
 
         if req.conversation:
@@ -1216,7 +1233,7 @@ UID: {user_id} 此 ID 可用于设置管理员。
                 if mood_dialogs := persona["_mood_imitation_dialogs_processed"]:
                     req.system_prompt += "\nHere are few shots of dialogs, you need to imitate the tone of 'B' in the following dialogs to respond:\n"
                     req.system_prompt += mood_dialogs
-                if begin_dialogs := persona["_begin_dialogs_processed"]:
+                if (begin_dialogs := persona["_begin_dialogs_processed"]) and not req.contexts:
                     req.contexts[:0] = begin_dialogs
 
         if quote and quote.message_str:

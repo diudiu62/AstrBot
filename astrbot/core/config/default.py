@@ -2,7 +2,7 @@
 如需修改配置，请在 `data/cmd_config.json` 中修改或者在管理面板中可视化修改。
 """
 
-VERSION = "3.5.1"
+VERSION = "3.5.4"
 DB_PATH = "data/data_v3.db"
 
 # 默认配置
@@ -38,6 +38,7 @@ DEFAULT_CONFIG = {
         "no_permission_reply": True,
         "empty_mention_waiting": True,
         "friend_message_needs_wake_prefix": False,
+        "ignore_bot_self_message": False,
     },
     "provider": [],
     "provider_settings": {
@@ -50,6 +51,9 @@ DEFAULT_CONFIG = {
         "default_personality": "default",
         "prompt_prefix": "",
         "max_context_length": -1,
+        "dequeue_context_length": 1,
+        "streaming_response": False,
+        "streaming_segmented": False,
     },
     "provider_stt_settings": {
         "enable": False,
@@ -58,6 +62,7 @@ DEFAULT_CONFIG = {
     "provider_tts_settings": {
         "enable": False,
         "provider_id": "",
+        "dual_output": False,
     },
     "provider_ltm_settings": {
         "group_icl_enable": False,
@@ -95,9 +100,10 @@ DEFAULT_CONFIG = {
     "wake_prefix": ["/"],
     "log_level": "INFO",
     "pip_install_arg": "",
-    "plugin_repo_mirror": "",
+    "pypi_index_url": "https://mirrors.aliyun.com/pypi/simple/",
     "knowledge_db": {},
     "persona": [],
+    "timezone": "",
 }
 
 
@@ -246,6 +252,9 @@ CONFIG_METADATA_2 = {
                 "description": "平台设置",
                 "type": "object",
                 "items": {
+                    "plugin_enable": {
+                        "invisible": True,  # 隐藏插件启用配置
+                    },
                     "unique_session": {
                         "description": "会话隔离",
                         "type": "bool",
@@ -280,6 +289,11 @@ CONFIG_METADATA_2 = {
                         "description": "私聊消息是否需要唤醒前缀",
                         "type": "bool",
                         "hint": "启用后，私聊消息需要唤醒前缀才会被处理，同群聊一样。",
+                    },
+                    "ignore_bot_self_message": {
+                        "description": "是否忽略机器人自身的消息",
+                        "type": "bool",
+                        "hint": "某些平台如 gewechat 会将自身账号在其他 APP 端发送的消息也当做消息事件下发导致给自己发消息时唤醒机器人",
                     },
                     "segmented_reply": {
                         "description": "分段回复",
@@ -522,6 +536,14 @@ CONFIG_METADATA_2 = {
                             "model": "gemini-2.0-flash-exp",
                         },
                         "gm_resp_image_modal": False,
+                        "gm_native_search": False,
+                        "gm_native_coderunner": False,
+                        "gm_safety_settings": {
+                            "harassment": "BLOCK_MEDIUM_AND_ABOVE",
+                            "hate_speech": "BLOCK_MEDIUM_AND_ABOVE",
+                            "sexually_explicit": "BLOCK_MEDIUM_AND_ABOVE",
+                            "dangerous_content": "BLOCK_MEDIUM_AND_ABOVE",
+                        },
                     },
                     "DeepSeek": {
                         "id": "deepseek_default",
@@ -681,8 +703,114 @@ CONFIG_METADATA_2 = {
                         "fishaudio-tts-character": "可莉",
                         "timeout": "20",
                     },
+                    "阿里云百炼_TTS(API)": {
+                        "id": "dashscope_tts",
+                        "type": "dashscope_tts",
+                        "enable": False,
+                        "api_key": "",
+                        "model": "cosyvoice-v1",
+                        "dashscope_tts_voice": "loongstella",
+                        "timeout": "20",
+                    },
                 },
                 "items": {
+                    "dashscope_tts_voice": {
+                        "description": "语音合成模型",
+                        "type": "string",
+                        "hint": "阿里云百炼语音合成模型名称。具体可参考 https://help.aliyun.com/zh/model-studio/developer-reference/cosyvoice-python-api 等内容",
+                    },
+                    "gm_resp_image_modal": {
+                        "description": "启用图片模态",
+                        "type": "bool",
+                        "hint": "启用后，将支持返回图片内容。需要模型支持，否则会报错。具体支持模型请查看 Google Gemini 官方网站。温馨提示，如果您需要生成图片，请关闭 `启用群员识别` 配置获得更好的效果。",
+                    },
+                    "gm_native_search": {
+                        "description": "启用原生搜索功能",
+                        "type": "bool",
+                        "hint": "启用后所有函数工具将全部失效，免费次数限制请查阅官方文档",
+                        "obvious_hint": True,
+                    },
+                    "gm_native_coderunner": {
+                        "description": "启用原生代码执行器",
+                        "type": "bool",
+                        "hint": "启用后所有函数工具将全部失效",
+                        "obvious_hint": True,
+                    },
+                    "gm_safety_settings": {
+                        "description": "安全过滤器",
+                        "type": "object",
+                        "hint": "设置模型输入的内容安全过滤级别。过滤级别分类为NONE(不屏蔽)、HIGH(高风险时屏蔽)、MEDIUM_AND_ABOVE(中等风险及以上屏蔽)、LOW_AND_ABOVE(低风险及以上时屏蔽)，具体参见Gemini API文档。",
+                        "items": {
+                            "harassment": {
+                                "description": "骚扰内容",
+                                "type": "string",
+                                "hint": "负面或有害评论",
+                                "options": [
+                                    "BLOCK_NONE",
+                                    "BLOCK_ONLY_HIGH",
+                                    "BLOCK_MEDIUM_AND_ABOVE",
+                                    "BLOCK_LOW_AND_ABOVE",
+                                ],
+                            },
+                            "hate_speech": {
+                                "description": "仇恨言论",
+                                "type": "string",
+                                "hint": "粗鲁、无礼或亵渎性质内容",
+                                "options": [
+                                    "BLOCK_NONE",
+                                    "BLOCK_ONLY_HIGH",
+                                    "BLOCK_MEDIUM_AND_ABOVE",
+                                    "BLOCK_LOW_AND_ABOVE",
+                                ],
+                            },
+                            "sexually_explicit": {
+                                "description": "露骨色情内容",
+                                "type": "string",
+                                "hint": "包含性行为或其他淫秽内容的引用",
+                                "options": [
+                                    "BLOCK_NONE",
+                                    "BLOCK_ONLY_HIGH",
+                                    "BLOCK_MEDIUM_AND_ABOVE",
+                                    "BLOCK_LOW_AND_ABOVE",
+                                ],
+                            },
+                            "dangerous_content": {
+                                "description": "危险内容",
+                                "type": "string",
+                                "hint": "宣扬、助长或鼓励有害行为的信息",
+                                "options": [
+                                    "BLOCK_NONE",
+                                    "BLOCK_ONLY_HIGH",
+                                    "BLOCK_MEDIUM_AND_ABOVE",
+                                    "BLOCK_LOW_AND_ABOVE",
+                                ],
+                            },
+                        },
+                    },
+                    "rag_options": {
+                        "description": "RAG 选项",
+                        "type": "object",
+                        "hint": "检索知识库设置, 非必填。仅 Agent 应用类型支持(智能体应用, 包括 RAG 应用)。阿里云百炼应用开启此功能后将无法多轮对话。",
+                        "items": {
+                            "pipeline_ids": {
+                                "description": "知识库 ID 列表",
+                                "type": "list",
+                                "items": {"type": "string"},
+                                "hint": "对指定知识库内所有文档进行检索, 前往 https://bailian.console.aliyun.com/ 数据应用->知识索引创建和获取 ID。",
+                            },
+                            "file_ids": {
+                                "description": "非结构化文档 ID, 传入该参数将对指定非结构化文档进行检索。",
+                                "type": "list",
+                                "items": {"type": "string"},
+                                "hint": "对指定非结构化文档进行检索。前往 https://bailian.console.aliyun.com/ 数据管理创建和获取 ID。",
+                            },
+                            "output_reference": {
+                                "description": "是否输出知识库/文档的引用",
+                                "type": "bool",
+                                "hint": "在每次回答尾部加上引用源。默认为 False。",
+                            },
+                        },
+                    },
                     "sensevoice_hint": {
                         "description": "部署SenseVoice",
                         "type": "string",
@@ -832,8 +960,8 @@ CONFIG_METADATA_2 = {
                     "dify_api_type": {
                         "description": "Dify 应用类型",
                         "type": "string",
-                        "hint": "Dify API 类型。根据 Dify 官网，目前支持 chat, agent, workflow 三种应用类型",
-                        "options": ["chat", "agent", "workflow"],
+                        "hint": "Dify API 类型。根据 Dify 官网，目前支持 chat, chatflow, agent, workflow 三种应用类型。",
+                        "options": ["chat", "chatflow", "agent", "workflow"],
                     },
                     "dify_workflow_output_key": {
                         "description": "Dify Workflow 输出变量名",
@@ -901,6 +1029,21 @@ CONFIG_METADATA_2 = {
                         "description": "最多携带对话数量(条)",
                         "type": "int",
                         "hint": "超出这个数量时将丢弃最旧的部分，用户和AI的一轮聊天记为 1 条。-1 表示不限制，默认为不限制。",
+                    },
+                    "dequeue_context_length": {
+                        "description": "丢弃对话数量(条)",
+                        "type": "int",
+                        "hint": "超出 最多携带对话数量(条) 时，丢弃多少条记录，用户和AI的一轮聊天记为 1 条。适宜的配置，可以提高超长上下文对话 deepseek 命中缓存效果，理想情况下计费将降低到1/3以下",
+                    },
+                    "streaming_response": {
+                        "description": "启用流式回复",
+                        "type": "bool",
+                        "hint": "启用后，将会流式输出 LLM 的响应。目前仅支持 OpenAI API提供商 以及 Telegram、QQ Official 私聊 两个平台",
+                    },
+                    "streaming_segmented": {
+                        "description": "不支持流式回复的平台分段输出",
+                        "type": "bool",
+                        "hint": "启用后，若平台不支持流式回复，会分段输出。目前仅支持 aiocqhttp 和 gewechat 两个平台，不支持或无需使用流式分段输出的平台会静默忽略此选项",
                     },
                 },
             },
@@ -975,6 +1118,12 @@ CONFIG_METADATA_2 = {
                         "description": "提供商 ID，不填则默认第一个TTS提供商",
                         "type": "string",
                         "hint": "文本转语音提供商 ID。如果不填写将使用载入的第一个提供商。",
+                    },
+                    "dual_output": {
+                        "description": "启用语音和文字双输出",
+                        "type": "bool",
+                        "hint": "启用后，Bot 将同时输出语音和文字消息。",
+                        "obvious_hint": True,
                     },
                 },
             },
@@ -1082,6 +1231,12 @@ CONFIG_METADATA_2 = {
                 "type": "string",
                 "hint": "启用后，会以添加环境变量的方式设置代理。格式为 `http://ip:port`",
             },
+            "timezone": {
+                "description": "时区",
+                "type": "string",
+                "obvious_hint": True,
+                "hint": "时区设置。请填写 IANA 时区名称, 如 Asia/Shanghai, 为空时使用系统默认时区。所有时区请查看: https://data.iana.org/time-zones/tzdb-2021a/zone1970.tab",
+            },
             "log_level": {
                 "description": "控制台日志级别",
                 "type": "string",
@@ -1104,16 +1259,10 @@ CONFIG_METADATA_2 = {
                 "type": "string",
                 "hint": "安装插件依赖时，会使用 Python 的 pip 工具。这里可以填写额外的参数，如 `--break-system-package` 等。",
             },
-            "plugin_repo_mirror": {
-                "description": "插件仓库镜像",
+            "pypi_index_url": {
+                "description": "PyPI 软件仓库地址",
                 "type": "string",
-                "hint": "已废弃，请使用管理面板->设置页的代理地址选择",
-                "obvious_hint": True,
-                "options": [
-                    "default",
-                    "https://ghp.ci/",
-                    "https://github-mirror.us.kg/",
-                ],
+                "hint": "安装 Python 依赖时请求的 PyPI 软件仓库地址。默认为 https://mirrors.aliyun.com/pypi/simple/",
             },
         },
     },

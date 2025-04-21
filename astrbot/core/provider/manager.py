@@ -2,7 +2,7 @@ import traceback
 import asyncio
 from astrbot.core.config.astrbot_config import AstrBotConfig
 from .provider import Provider, STTProvider, TTSProvider, Personality
-from .entites import ProviderType
+from .entities import ProviderType
 from typing import List
 from astrbot.core.db import BaseDatabase
 from .register import provider_cls_map, llm_tools
@@ -13,14 +13,18 @@ class ProviderManager:
     def __init__(self, config: AstrBotConfig, db_helper: BaseDatabase):
         self.providers_config: List = config["provider"]
         self.provider_settings: dict = config["provider_settings"]
-        self.provider_stt_settings: dict = config.get("provider_stt_settings", {})
-        self.provider_tts_settings: dict = config.get("provider_tts_settings", {})
+        self.provider_stt_settings: dict = config.get(
+            "provider_stt_settings", {})
+        self.provider_tts_settings: dict = config.get(
+            "provider_tts_settings", {})
         self.persona_configs: list = config.get("persona", [])
         self.astrbot_config = config
 
         self.selected_provider_id = sp.get("curr_provider")
-        self.selected_stt_provider_id = self.provider_stt_settings.get("provider_id")
-        self.selected_tts_provider_id = self.provider_settings.get("provider_id")
+        self.selected_stt_provider_id = self.provider_stt_settings.get(
+            "provider_id")
+        self.selected_tts_provider_id = self.provider_settings.get(
+            "provider_id")
         self.provider_enabled = self.provider_settings.get("enable", False)
         self.stt_enabled = self.provider_stt_settings.get("enable", False)
         self.tts_enabled = self.provider_tts_settings.get("enable", False)
@@ -198,9 +202,13 @@ class ProviderManager:
                     from .sources.fishaudio_tts_api_source import (
                         ProviderFishAudioTTSAPI as ProviderFishAudioTTSAPI,
                     )
+                case "dashscope_tts":
+                    from .sources.dashscope_tts import (
+                        ProviderDashscopeTTSAPI as ProviderDashscopeTTSAPI,
+                    )
                 case "cosyvoice_tts_api":
-                        from .sources.cosyvoice_tts_api_source import (
-                            ProviderCosyVoiceTTSAPI as ProviderCosyVoiceTTSAPI,
+                    from .sources.cosyvoice_tts_api_source import (
+                        ProviderCosyVoiceTTSAPI as ProviderCosyVoiceTTSAPI,
                     )
         except (ImportError, ModuleNotFoundError) as e:
             logger.critical(

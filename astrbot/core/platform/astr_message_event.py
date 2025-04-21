@@ -1,7 +1,10 @@
 import abc
 import asyncio
+import re
+import hashlib
+import uuid
 from dataclasses import dataclass
-from typing import List, Union, Optional
+from typing import List, Union, Optional, AsyncGenerator
 
 from astrbot.core.db.po import Conversation
 from astrbot.core.message.components import (
@@ -16,7 +19,7 @@ from astrbot.core.message.components import (
 )
 from astrbot.core.message.message_event_result import MessageEventResult, MessageChain
 from astrbot.core.platform.message_type import MessageType
-from astrbot.core.provider.entites import ProviderRequest
+from astrbot.core.provider.entities import ProviderRequest
 from astrbot.core.utils.metrics import Metric
 from .astrbot_message import AstrBotMessage, Group
 from .platform_metadata import PlatformMetadata
@@ -80,6 +83,9 @@ class AstrMessageEvent(abc.ABC):
 
     def get_platform_name(self):
         return self.platform_meta.name
+
+    def get_platform_id(self):
+        return self.platform_meta.id
 
     def get_message_str(self) -> str:
         """
@@ -201,6 +207,32 @@ class AstrMessageEvent(abc.ABC):
         是否是管理员。
         """
         return self.role == "admin"
+
+    async def process_buffer(self, buffer: str, pattern: re.Pattern) -> str:
+        """
+        将消息缓冲区中的文本按指定正则表达式分割后发送至消息平台，作为不支持流式输出平台的Fallback。
+        """
+        while True:
+            match = re.search(pattern, buffer)
+            if not match:
+                break
+            matched_text = match.group()
+            await self.send(MessageChain([Plain(matched_text)]))
+            buffer = buffer[match.end() :]
+            await asyncio.sleep(1.5)  # 限速
+        return buffer
+
+    async def send_streaming(
+        self, generator: AsyncGenerator[MessageChain, None], use_fallback: bool = False
+    ):
+        """发送流式消息到消息平台，使用异步生成器。
+        目前仅支持: telegram，qq official 私聊。
+        Fallback仅支持 aiocqhttp, gewechat。
+        """
+        asyncio.create_task(
+            Metric.upload(msg_event_tick=1, adapter_name=self.platform_meta.name)
+        )
+        self._has_send_oper = True
 
     async def _pre_send(self):
         """调度器会在执行 send() 前调用该方法"""
@@ -372,8 +404,13 @@ class AstrMessageEvent(abc.ABC):
         Args:
             message (MessageChain): 消息链，具体使用方式请参考文档。
         """
+        # Leverage BLAKE2 hash function to generate a non-reversible hash of the sender ID for privacy.
+        hash_obj = hashlib.blake2b(self.get_sender_id().encode("utf-8"), digest_size=16)
+        sid = str(uuid.UUID(bytes=hash_obj.digest()))
         asyncio.create_task(
-            Metric.upload(msg_event_tick=1, adapter_name=self.platform_meta.name)
+            Metric.upload(
+                msg_event_tick=1, adapter_name=self.platform_meta.name, sid=sid
+            )
         )
         self._has_send_oper = True
 
