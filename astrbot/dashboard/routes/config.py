@@ -12,8 +12,11 @@ from astrbot.core import logger
 
 
 def try_cast(value: str, type_: str):
-    if type_ == "int" and value.isdigit():
-        return int(value)
+    if type_ == "int":
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            return None
     elif (
         type_ == "float"
         and isinstance(value, str)
@@ -22,6 +25,11 @@ def try_cast(value: str, type_: str):
         return float(value)
     elif type_ == "float" and isinstance(value, int):
         return float(value)
+    elif type_ == "float":
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return None
 
 
 def validate_config(
@@ -34,21 +42,31 @@ def validate_config(
             if key not in metadata:
                 # 无 schema 的配置项，执行类型猜测
                 if isinstance(value, str):
-                    if value.isdigit():
+                    try:
                         data[key] = int(value)
-                    elif value.replace(".", "", 1).isdigit():
+                        continue
+                    except ValueError:
+                        pass
+
+                    try:
                         data[key] = float(value)
-                    elif value == "true":
+                        continue
+                    except ValueError:
+                        pass
+
+                    if value.lower() == "true":
                         data[key] = True
-                    elif value == "false":
+                    elif value.lower() == "false":
                         data[key] = False
                 continue
             meta = metadata[key]
+            if "type" not in meta:
+                logger.debug(f"配置项 {path}{key} 没有类型定义, 跳过校验")
+                continue
             # null 转换
             if value is None:
                 data[key] = DEFAULT_VALUE_MAP[meta["type"]]
                 continue
-            # 递归验证
             if meta["type"] == "list" and not isinstance(value, list):
                 errors.append(
                     f"错误的类型 {path}{key}: 期望是 list, 得到了 {type(value).__name__}"
@@ -163,7 +181,7 @@ class ConfigRoute(Route):
             await self._save_astrbot_configs(post_configs)
             return Response().ok(None, "保存成功~ 机器人正在重载配置。").__dict__
         except Exception as e:
-            logger.error(e)
+            logger.error(traceback.format_exc())
             return Response().error(str(e)).__dict__
 
     async def post_plugin_configs(self):
