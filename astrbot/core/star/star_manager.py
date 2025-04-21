@@ -332,7 +332,10 @@ class PluginManager:
                         )
                     # 绑定 llm_tool handler
                     for func_tool in llm_tools.func_list:
-                        if func_tool.handler.__module__ == metadata.module_path:
+                        if (
+                            func_tool.handler
+                            and func_tool.handler.__module__ == metadata.module_path
+                        ):
                             func_tool.handler_module_path = metadata.module_path
                             func_tool.handler = functools.partial(
                                 func_tool.handler, metadata.star_cls
@@ -555,7 +558,7 @@ class PluginManager:
 
     async def _terminate_plugin(self, star_metadata: StarMetadata):
         """终止插件，调用插件的 terminate() 和 __del__() 方法"""
-        logging.info(f"正在终止插件 {star_metadata.name} ...")
+        logger.info(f"正在终止插件 {star_metadata.name} ...")
 
         if not star_metadata.activated:
             # 说明之前已经被禁用了
@@ -603,4 +606,4 @@ class PluginManager:
         except BaseException as e:
             logger.warning(f"删除插件压缩包失败: {str(e)}")
         # await self.reload()
-        await self.load(desti_dir)
+        await self.load(specified_dir_name=dir_name)
