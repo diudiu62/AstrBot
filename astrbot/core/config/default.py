@@ -634,10 +634,11 @@ CONFIG_METADATA_2 = {
                         "stt_model": "iic/SenseVoiceSmall",
                         "is_emotion": False,
                     },
-                    "cosyvoice": {
+                    "CosyVoice(本地加载)": {
                         "enable": False,
-                        "id": "cosyvoice",
+                        "id": "CosyVoice",
                         "type": "cosyvoice_tts_selfhost",
+                        "provider_type": "text_to_speech",
                         "cosyvoice_tts_api": "http://127.0.0.1:5000",
                         "mode_uid": "zero_shot",
                         "prompt_text": "",

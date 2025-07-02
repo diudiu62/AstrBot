@@ -118,9 +118,108 @@ export default {
             save_message: "",
             save_message_success: "",
 
-            showConsole: false,
-        }
+      showConsole: false,
+      
+      // 供应商状态相关
+      providerStatuses: [],
+      loadingStatus: false,
+
+      // 新增提供商对话框相关
+      showAddProviderDialog: false,
+      activeProviderTab: 'chat_completion',
+
+      // 添加提供商类型分类
+      activeProviderTypeTab: 'all',
+
+      // 兼容旧版本（< v3.5.11）的 mapping，用于映射到对应的提供商能力类型
+      oldVersionProviderTypeMapping: {
+        "openai_chat_completion": "chat_completion",
+        "anthropic_chat_completion": "chat_completion",
+        "googlegenai_chat_completion": "chat_completion",
+        "zhipu_chat_completion": "chat_completion",
+        "dify": "chat_completion",
+        "dashscope": "chat_completion",
+        "openai_whisper_api": "speech_to_text",
+        "openai_whisper_selfhost": "speech_to_text",
+        "sensevoice_stt_selfhost": "speech_to_text",
+        "cosyvoice_tts_selfhost": "text_to_speech",
+        "openai_tts_api": "text_to_speech",
+        "edge_tts": "text_to_speech",
+        "gsvi_tts_api": "text_to_speech",
+        "fishaudio_tts_api": "text_to_speech",
+        "dashscope_tts": "text_to_speech",
+        "azure_tts": "text_to_speech",
+        "minimax_tts_api": "text_to_speech",
+        "volcengine_tts": "text_to_speech",
+      }
+    }
+  },
+
+  watch: {
+    showIdConflictDialog(newValue) {
+      // 当对话框关闭时，如果 Promise 还在等待，则拒绝它以防止内存泄漏
+      if (!newValue && this.idConflictResolve) {
+        this.idConflictResolve(false);
+        this.idConflictResolve = null;
+      }
     },
+    showKeyConfirm(newValue) {
+      // 当对话框关闭时，如果 Promise 还在等待，则拒绝它以防止内存泄漏
+      if (!newValue && this.keyConfirmResolve) {
+        this.keyConfirmResolve(false);
+        this.keyConfirmResolve = null;
+      }
+    }
+  },
+
+  computed: {
+    // 翻译消息的计算属性
+    messages() {
+      return {
+        emptyText: {
+          all: this.tm('providers.empty.all'),
+          typed: this.tm('providers.empty.typed')
+        },
+        tabTypes: {
+          'chat_completion': this.tm('providers.tabs.chatCompletion'),
+          'speech_to_text': this.tm('providers.tabs.speechToText'),
+          'text_to_speech': this.tm('providers.tabs.textToSpeech'),
+          'embedding': this.tm('providers.tabs.embedding')
+        },
+        success: {
+          update: this.tm('messages.success.update'),
+          add: this.tm('messages.success.add'),
+          delete: this.tm('messages.success.delete'),
+          statusUpdate: this.tm('messages.success.statusUpdate'),
+          sessionSeparation: this.tm('messages.success.sessionSeparation')
+        },
+        error: {
+          sessionSeparation: this.tm('messages.error.sessionSeparation')
+        },
+        confirm: {
+          delete: this.tm('messages.confirm.delete')
+        }
+      };
+    },
+    
+    // 根据选择的标签过滤提供商列表
+    filteredProviders() {
+      if (!this.config_data.provider || this.activeProviderTypeTab === 'all') {
+        return this.config_data.provider || [];
+      }
+
+      return this.config_data.provider.filter(provider => {
+        // 如果provider.provider_type已经存在，直接使用它
+        if (provider.provider_type) {
+          return provider.provider_type === this.activeProviderTypeTab;
+        }
+        
+        // 否则使用映射关系
+        const mappedType = this.oldVersionProviderTypeMapping[provider.type];
+        return mappedType === this.activeProviderTypeTab;
+      });
+    }
+  },
 
     mounted() {
         this.getConfig();

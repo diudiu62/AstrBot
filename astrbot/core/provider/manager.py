@@ -192,9 +192,13 @@ class ProviderManager:
                     from .sources.fishaudio_tts_api_source import (
                         ProviderFishAudioTTSAPI as ProviderFishAudioTTSAPI,
                     )
-                case "cosyvoice_tts_api":
-                        from .sources.cosyvoice_tts_api_source import (
-                            ProviderCosyVoiceTTSAPI as ProviderCosyVoiceTTSAPI,
+                case "dashscope_tts":
+                    from .sources.dashscope_tts import (
+                        ProviderDashscopeTTSAPI as ProviderDashscopeTTSAPI,
+                    )
+                case "cosyvoice_tts_selfhost":
+                    from .sources.cosyvoice_tts_api_source import (
+                        ProviderCosyVoiceTTSAPI as ProviderCosyVoiceTTSAPI,
                     )
         except (ImportError, ModuleNotFoundError) as e:
             logger.critical(
