@@ -419,6 +419,7 @@ export default {
         "openai_whisper_api": "speech_to_text",
         "openai_whisper_selfhost": "speech_to_text",
         "sensevoice_stt_selfhost": "speech_to_text",
+        "cosyvoice_tts_selfhost": "text_to_speech",
         "openai_tts_api": "text_to_speech",
         "edge_tts": "text_to_speech",
         "gsvi_tts_api": "text_to_speech",

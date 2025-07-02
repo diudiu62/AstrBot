@@ -247,7 +247,7 @@ class ProviderManager:
                     from .sources.dashscope_tts import (
                         ProviderDashscopeTTSAPI as ProviderDashscopeTTSAPI,
                     )
-                case "cosyvoice_tts_api":
+                case "cosyvoice_tts_selfhost":
                     from .sources.cosyvoice_tts_api_source import (
                         ProviderCosyVoiceTTSAPI as ProviderCosyVoiceTTSAPI,
                     )

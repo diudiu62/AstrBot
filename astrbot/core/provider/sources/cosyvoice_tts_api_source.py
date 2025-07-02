@@ -1,7 +1,7 @@
 '''
 Author: diudiu62
 Date: 2025-02-20 16:42:49
-LastEditTime: 2025-02-25 14:30:22
+LastEditTime: 2025-07-02 14:57:09
 '''
 from datetime import datetime
 import os
@@ -23,7 +23,7 @@ class CosyVoiceAPIError(Exception):
     """自定义异常类，用于CosyVoice API相关错误。"""
     pass
 
-@register_provider_adapter("cosyvoice_tts_api", "CosyVoice API", provider_type=ProviderType.TEXT_TO_SPEECH)
+@register_provider_adapter("cosyvoice_tts_selfhost", "CosyVoice API", provider_type=ProviderType.TEXT_TO_SPEECH)
 class ProviderCosyVoiceTTSAPI(TTSProvider):
     def __init__(self, provider_config: dict, provider_settings: dict) -> None:
         super().__init__(provider_config, provider_settings)
