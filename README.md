@@ -1,6 +1,6 @@
 <p align="center">
-
-![yjtp](https://github.com/user-attachments/assets/dcc74009-c57e-4b66-9ae3-0a81fc001255)
+ 
+![AstrBot-Logo-Simplified](https://github.com/user-attachments/assets/ffd99b6b-3272-4682-beaa-6fe74250f7d9)
 
 </p>
 
@@ -16,9 +16,8 @@ _✨ 易上手的多平台 LLM 聊天机器人及开发框架 ✨_
 <a  href="https://qm.qq.com/cgi-bin/qm/qr?k=wtbaNx7EioxeaqS9z7RQWVXPIxg2zYr7&jump_from=webapi&authKey=vlqnv/AV2DbJEvGIcxdlNSpfxVy+8vVqijgreRdnVKOaydpc+YSw4MctmEbr0k5"><img alt="QQ_community" src="https://img.shields.io/badge/QQ群-775869627-purple?style=for-the-badge&color=76bad9"></a>
 <a  href="https://t.me/+hAsD2Ebl5as3NmY1"><img alt="Telegram_community" src="https://img.shields.io/badge/Telegram-AstrBot-purple?style=for-the-badge&color=76bad9"></a>
 [![wakatime](https://wakatime.com/badge/user/915e5316-99c6-4563-a483-ef186cf000c9/project/018e705a-a1a7-409a-a849-3013485e6c8e.svg?style=for-the-badge&color=76bad9)](https://wakatime.com/badge/user/915e5316-99c6-4563-a483-ef186cf000c9/project/018e705a-a1a7-409a-a849-3013485e6c8e)
-![Dynamic JSON Badge](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.soulter.top%2Fastrbot%2Fstats&query=v&label=7%E6%97%A5%E6%B4%BB%E8%B7%83%E9%87%8F&cacheSeconds=3600&style=for-the-badge&color=3b618e)
+![Dynamic JSON Badge](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.soulter.top%2Fastrbot%2Fstats&query=v&label=7日消息量&cacheSeconds=3600&style=for-the-badge&color=3b618e)
 ![Dynamic JSON Badge](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.soulter.top%2Fastrbot%2Fplugin-num&query=%24.result&suffix=%E4%B8%AA&style=for-the-badge&label=%E6%8F%92%E4%BB%B6%E5%B8%82%E5%9C%BA&cacheSeconds=3600)
-
 
 <a href="https://github.com/Soulter/AstrBot/blob/master/README_en.md">English</a> ｜
 <a href="https://github.com/Soulter/AstrBot/blob/master/README_ja.md">日本語</a> ｜
@@ -28,14 +27,25 @@ _✨ 易上手的多平台 LLM 聊天机器人及开发框架 ✨_
 
 AstrBot 是一个松耦合、异步、支持多消息平台部署、具有易用的插件系统和完善的大语言模型（LLM）接入功能的聊天机器人及开发框架。
 
-[![star](https://gitcode.com/Soulter/AstrBot/star/badge.svg?style=for-the-badge)](https://gitcode.com/Soulter/AstrBot)
 
 <!-- [![codecov](https://img.shields.io/codecov/c/github/soulter/astrbot?style=for-the-badge)](https://codecov.io/gh/Soulter/AstrBot)
  -->
 
+> [!WARNING]
+> 
+> 请务必修改默认密码以及保证 AstrBot 版本 >= 3.5.13。
+
 ## ✨ 近期更新
 
-1. AstrBot 现已支持接入 [MCP](https://modelcontextprotocol.io/) 服务器！
+<details><summary>1. AstrBot 现已自带知识库能力</summary>
+
+ 📚 详见[文档](https://astrbot.app/use/knowledge-base.html)
+
+ ![image](https://github.com/user-attachments/assets/28b639b0-bb5c-4958-8e94-92ae8cfd1ab4)
+
+</details>
+
+2. AstrBot 现已支持接入 [MCP](https://modelcontextprotocol.io/) 服务器！
 
 ## ✨ 主要功能
 
@@ -43,7 +53,7 @@ AstrBot 是一个松耦合、异步、支持多消息平台部署、具有易用
 > 🪧 我们正基于前沿科研成果，设计并实现适用于角色扮演和情感陪伴的长短期记忆模型及情绪控制模型，旨在提升对话的真实性与情感表达能力。敬请期待 `v3.6.0` 版本！
 
 1. **大语言模型对话**。支持各种大语言模型，包括 OpenAI API、Google Gemini、Llama、Deepseek、ChatGLM 等，支持接入本地部署的大模型，通过 Ollama、LLMTuner。具有多轮对话、人格情境、多模态能力，支持图片理解、语音转文字（Whisper）。
-2. **多消息平台接入**。支持接入 QQ（OneBot）、QQ 频道、微信（Gewechat）、飞书、Telegram。后续将支持钉钉、Discord、WhatsApp、小爱音响。支持速率限制、白名单、关键词过滤、百度内容审核。
+2. **多消息平台接入**。支持接入 QQ（OneBot、QQ 官方机器人平台）、QQ 频道、微信、企业微信、微信公众号、飞书、Telegram、钉钉、Discord、KOOK、VoceChat。支持速率限制、白名单、关键词过滤、百度内容审核。
 3. **Agent**。原生支持部分 Agent 能力，如代码执行器、自然语言待办、网页搜索。对接 [Dify 平台](https://dify.ai/)，便捷接入 Dify 智能助手、知识库和 Dify 工作流。
 4. **插件扩展**。深度优化的插件机制，支持[开发插件](https://astrbot.app/dev/plugin.html)扩展功能，极简开发。已支持安装多个插件。
 5. **可视化管理面板**。支持可视化修改配置、插件管理、日志查看等功能，降低配置难度。集成 WebChat，可在面板上与大模型对话。
@@ -76,55 +86,85 @@ AstrBot 是一个松耦合、异步、支持多消息平台部署、具有易用
 
 #### 手动部署
 
-推荐使用 `uv`。
+> 推荐使用 `uv`。
+
+首先，安装 uv：
+
+```bash
+pip install uv
+```
+
+通过 Git Clone 安装 AstrBot：
 
 ```bash
 git clone https://github.com/AstrBotDevs/AstrBot && cd AstrBot
-pip install uv
 uv run main.py
+```
+
+或者，直接通过 uvx 安装 AstrBot：
+
+```bash
+mkdir astrbot && cd astrbot
+uvx astrbot init
+# uvx astrbot run
 ```
 
 或者请参阅官方文档 [通过源码部署 AstrBot](https://astrbot.app/deploy/astrbot/cli.html) 。
 
-#### Replit 部署
+#### 在 Replit 上部署
 
 [![Run on Repl.it](https://repl.it/badge/github/Soulter/AstrBot)](https://repl.it/github/Soulter/AstrBot)
 
+#### 在 雨云 上部署
+
+[![Deploy on RainYun](https://rainyun-apps.cn-nb1.rains3.com/materials/deploy-on-rainyun-en.svg)](https://app.rainyun.com/apps/rca/store/5994?ref=NjU1ODg0)
+
 ## ⚡ 消息平台支持情况
 
-| 平台    | 支持性 | 详情 | 消息类型 |
-| -------- | ------- | ------- | ------ |
-| QQ(官方机器人接口) | ✔    | 私聊、群聊，QQ 频道私聊、群聊 | 文字、图片 |
-| QQ(OneBot)      | ✔    | 私聊、群聊 | 文字、图片、语音 |
-| 微信(个人号)    | ✔    | 微信个人号私聊、群聊 | 文字、图片、语音 |
-| [Telegram](https://github.com/Soulter/astrbot_plugin_telegram)   | ✔    | 私聊、群聊 | 文字、图片 |
-| [微信(企业微信)](https://github.com/Soulter/astrbot_plugin_wecom)    | ✔    | 私聊 | 文字、图片、语音 |
-| 飞书   | ✔    | 私聊、群聊 | 文字、图片 |
-| 钉钉   | ✔    | 私聊、群聊 | 文字、图片 |
-| 微信对话开放平台 | 🚧    | 计划内 | - |
-| Discord   | 🚧    | 计划内 | - |
-| WhatsApp   | 🚧    | 计划内 | - |
-| 小爱音响   | 🚧    | 计划内 | - |
+| 平台    | 支持性 |
+| -------- | ------- |
+| QQ(官方机器人接口) | ✔    |
+| QQ(OneBot)      | ✔    |
+| 微信个人号    | ✔    |
+| Telegram   | ✔    |
+| 企业微信    | ✔    |
+| 微信客服    | ✔    |
+| 微信公众号    | ✔    |
+| 飞书   | ✔    |
+| 钉钉   | ✔    |
+| Slack   | ✔    |
+| Discord   | ✔    |
+| [KOOK](https://github.com/wuyan1003/astrbot_plugin_kook_adapter)   | ✔    |
+| [VoceChat](https://github.com/HikariFroya/astrbot_plugin_vocechat)   | ✔    |
+| 微信对话开放平台 | 🚧    |
+| WhatsApp   | 🚧    |
+| 小爱音响   | 🚧    |
 
 ## ⚡ 提供商支持情况
 
 | 名称    | 支持性 | 类型 | 备注 |
 | -------- | ------- | ------- | ------- |
-| OpenAI API | ✔    | 文本生成 | 也支持 DeepSeek、Google Gemini、GLM、Kimi、硅基流动、xAI 等兼容 OpenAI API 的服务 |
+| OpenAI API | ✔    | 文本生成 | 也支持 DeepSeek、Google Gemini、GLM、Kimi、xAI 等兼容 OpenAI API 的服务 |
 | Claude API | ✔    | 文本生成 |  |
 | Google Gemini API | ✔    | 文本生成 |  |
 | Dify | ✔    | LLMOps |  |
-| DashScope(阿里云百炼应用) | ✔    | LLMOps |  |
+| 阿里云百炼应用 | ✔    | LLMOps |  |
 | Ollama | ✔    | 模型加载器 | 本地部署 DeepSeek、Llama 等开源语言模型 |
 | LM Studio | ✔    | 模型加载器 | 本地部署 DeepSeek、Llama 等开源语言模型 |
 | LLMTuner | ✔    | 模型加载器 | 本地加载 lora 等微调模型 |
+| 硅基流动 | ✔    | 模型 API 服务平台 |  |
+| PPIO 派欧云 | ✔    | 模型 API 服务平台 |  |
 | OneAPI | ✔    | LLM 分发系统 |  |
 | Whisper | ✔    | 语音转文本 | 支持 API、本地部署 |
 | SenseVoice | ✔    | 语音转文本 | 本地部署 |
 | OpenAI TTS API | ✔    | 文本转语音 |  |
 | GSVI | ✔    | 文本转语音 | GPT-Sovits-Inference |
-| Fishaudio | ✔    | 文本转语音 | GPT-Sovits 作者参与的项目 |
-| Edge-TTS | ✔    | 文本转语音 | Edge 浏览器的免费 TTS |
+| GPT-SoVITs | ✔    | 文本转语音 | GPT-Sovits-Inference |
+| FishAudio | ✔    | 文本转语音 | GPT-Sovits 作者参与的项目 |
+| Edge TTS | ✔    | 文本转语音 | Edge 浏览器的免费 TTS |
+| 阿里云百炼 TTS | ✔    | 文本转语音 |  |
+| Azure TTS | ✔    | 文本转语音 | Microsoft Azure TTS |
+
 
 ## ❤️ 贡献
 
@@ -148,9 +188,10 @@ pre-commit install
 
 - Star 这个项目！
 - 在[爱发电](https://afdian.com/a/soulter)支持我！
-- 在[微信](https://drive.soulter.top/f/pYfA/d903f4fa49a496fda3f16d2be9e023b5.png)支持我~
 
 ## ✨ Demo
+
+<details><summary>👉 点击展开多张 Demo 截图 👈</summary>
 
 <div align='center'>
 
@@ -173,6 +214,9 @@ _✨ WebUI ✨_
 
 </div>
 
+</details>
+
+
 ## ❤️ Special Thanks
 
 特别感谢所有 Contributors 和插件开发者对 AstrBot 的贡献 ❤️
@@ -181,6 +225,10 @@ _✨ WebUI ✨_
   <img src="https://contrib.rocks/image?repo=AstrBotDevs/AstrBot" />
 </a>
 
+此外，本项目的诞生离不开以下开源项目：
+
+- [NapNeko/NapCatQQ](https://github.com/NapNeko/NapCatQQ) - 伟大的猫猫框架
+- [wechatpy/wechatpy](https://github.com/wechatpy/wechatpy)
 
 ## ⭐ Star History
 
@@ -192,6 +240,9 @@ _✨ WebUI ✨_
 [![Star History Chart](https://api.star-history.com/svg?repos=soulter/astrbot&type=Date)](https://star-history.com/#soulter/astrbot&Date)
 
 </div>
+
+![10k-star-banner-credit-by-kevin](https://github.com/user-attachments/assets/c97fc5fb-20b9-4bc8-9998-c20b930ab097)
+
 
 ## Disclaimer
 

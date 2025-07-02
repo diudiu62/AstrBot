@@ -3,8 +3,8 @@ import json
 import textwrap
 import os
 import asyncio
-import copy
 import logging
+from datetime import timedelta
 
 from typing import Dict, List, Awaitable, Literal, Any
 from dataclasses import dataclass
@@ -13,11 +13,20 @@ from contextlib import AsyncExitStack
 from astrbot import logger
 from astrbot.core.utils.log_pipe import LogPipe
 
+from astrbot.core.utils.astrbot_path import get_astrbot_data_path
+
 try:
     import mcp
     from mcp.client.sse import sse_client
 except (ModuleNotFoundError, ImportError):
     logger.warning("警告: 缺少依赖库 'mcp'，将无法使用 MCP 服务。")
+
+try:
+    from mcp.client.streamable_http import streamablehttp_client
+except (ModuleNotFoundError, ImportError):
+    logger.warning(
+        "警告: 缺少依赖库 'mcp' 或者 mcp 库版本过低，无法使用 Streamable HTTP 连接方式。"
+    )
 
 DEFAULT_MCP_CONFIG = {"mcpServers": {}}
 
@@ -95,7 +104,10 @@ class MCPClient:
     async def connect_to_server(self, mcp_server_config: dict, name: str):
         """连接到 MCP 服务器
 
-        如果 `url` 参数存在，则使用 SSE 的方式连接到 MCP 服务。
+        如果 `url` 参数存在：
+            1. 当 transport 指定为 `streamable_http` 时，使用 Streamable HTTP 连接方式。
+            1. 当 transport 指定为 `sse` 时，使用 SSE 连接方式。
+            2. 如果没有指定，默认使用 SSE 的方式连接到 MCP 服务。
 
         Args:
             mcp_server_config (dict): Configuration for the MCP server. See https://modelcontextprotocol.io/quickstart/server
@@ -107,15 +119,41 @@ class MCPClient:
         cfg.pop("active", None)  # Remove active flag from config
 
         if "url" in cfg:
-            # SSE transport method
-            self._streams_context = sse_client(url=cfg["url"])
-            streams = await self._streams_context.__aenter__()
+            is_sse = True
+            if cfg.get("transport") == "streamable_http":
+                is_sse = False
+            if is_sse:
+                # SSE transport method
+                self._streams_context = sse_client(
+                    url=cfg["url"],
+                    headers=cfg.get("headers", {}),
+                    timeout=cfg.get("timeout", 5),
+                    sse_read_timeout=cfg.get("sse_read_timeout", 60 * 5),
+                )
+                streams = await self._streams_context.__aenter__()
 
-            # Create a new client session
-            # self.session = await self._session_context.__aenter__()
-            self.session = await self.exit_stack.enter_async_context(
-                mcp.ClientSession(*streams)
-            )
+                # Create a new client session
+                self.session = await self.exit_stack.enter_async_context(
+                    mcp.ClientSession(*streams)
+                )
+            else:
+                timeout = timedelta(seconds=cfg.get("timeout", 30))
+                sse_read_timeout = timedelta(
+                    seconds=cfg.get("sse_read_timeout", 60 * 5)
+                )
+                self._streams_context = streamablehttp_client(
+                    url=cfg["url"],
+                    headers=cfg.get("headers", {}),
+                    timeout=timeout,
+                    sse_read_timeout=sse_read_timeout,
+                    terminate_on_close=cfg.get("terminate_on_close", True),
+                )
+                read_s, write_s, _ = await self._streams_context.__aenter__()
+
+                # Create a new client session
+                self.session = await self.exit_stack.enter_async_context(
+                    mcp.ClientSession(read_stream=read_s, write_stream=write_s)
+                )
 
         else:
             server_params = mcp.StdioServerParameters(
@@ -239,8 +277,7 @@ class FuncCall:
         }
         ```
         """
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        data_dir = os.path.abspath(os.path.join(current_dir, "../../../data"))
+        data_dir = get_astrbot_data_path()
 
         mcp_json_file = os.path.join(data_dir, "mcp_server.json")
         if not os.path.exists(mcp_json_file):
@@ -360,7 +397,7 @@ class FuncCall:
                 self.func_list.append(func_tool)
 
             logger.info(f"已连接 MCP 服务 {name}, Tools: {tool_names}")
-            return True
+            return
         except Exception as e:
             import traceback
 
@@ -369,7 +406,7 @@ class FuncCall:
             # 发生错误时确保客户端被清理
             if name in self.mcp_client_dict:
                 await self._terminate_mcp_client(name)
-            return False
+            return
 
     async def _terminate_mcp_client(self, name: str) -> None:
         """关闭并清理MCP客户端"""
@@ -435,28 +472,86 @@ class FuncCall:
             tools.append(tool)
         return tools
 
-    def get_func_desc_google_genai_style(self) -> Dict:
+    def get_func_desc_google_genai_style(self) -> dict:
+        """
+        获得 Google GenAI API 风格的**已经激活**的工具描述
+        """
+
+        # Gemini API 支持的数据类型和格式
+        supported_types = {
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "array",
+            "object",
+            "null",
+        }
+        supported_formats = {
+            "string": {"enum", "date-time"},
+            "integer": {"int32", "int64"},
+            "number": {"float", "double"},
+        }
+
+        def convert_schema(schema: dict) -> dict:
+            """转换 schema 为 Gemini API 格式"""
+
+            # 如果 schema 包含 anyOf，则只返回 anyOf 字段
+            if "anyOf" in schema:
+                return {"anyOf": [convert_schema(s) for s in schema["anyOf"]]}
+
+            result = {}
+
+            if "type" in schema and schema["type"] in supported_types:
+                result["type"] = schema["type"]
+                if "format" in schema and schema["format"] in supported_formats.get(
+                    result["type"], set()
+                ):
+                    result["format"] = schema["format"]
+            else:
+                # 暂时指定默认为null
+                result["type"] = "null"
+
+            support_fields = {
+                "title",
+                "description",
+                "enum",
+                "minimum",
+                "maximum",
+                "maxItems",
+                "minItems",
+                "nullable",
+                "required",
+            }
+            result.update({k: schema[k] for k in support_fields if k in schema})
+
+            if "properties" in schema:
+                properties = {}
+                for key, value in schema["properties"].items():
+                    prop_value = convert_schema(value)
+                    if "default" in prop_value:
+                        del prop_value["default"]
+                    properties[key] = prop_value
+
+                if properties:  # 只在有非空属性时添加
+                    result["properties"] = properties
+
+            if "items" in schema:
+                result["items"] = convert_schema(schema["items"])
+
+            return result
+
+        tools = [
+            {
+                "name": f.name,
+                "description": f.description,
+                **({"parameters": convert_schema(f.parameters)}),
+            }
+            for f in self.func_list
+            if f.active
+        ]
+
         declarations = {}
-        tools = []
-        for f in self.func_list:
-            if not f.active:
-                continue
-
-            func_declaration = {"name": f.name, "description": f.description}
-
-            # 检查并添加非空的properties参数
-            params = f.parameters if isinstance(f.parameters, dict) else {}
-            params = copy.deepcopy(params)
-            if params.get("properties", {}):
-                properties = params["properties"]
-                for key, value in properties.items():
-                    if "default" in value:
-                        del value["default"]
-                params["properties"] = properties
-                func_declaration["parameters"] = params
-
-            tools.append(func_declaration)
-
         if tools:
             declarations["function_declarations"] = tools
         return declarations

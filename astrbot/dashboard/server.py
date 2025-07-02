@@ -10,13 +10,12 @@ from quart.logging import default_handler
 from astrbot.core.core_lifecycle import AstrBotCoreLifecycle
 from .routes import *
 from .routes.route import RouteContext, Response
-from astrbot.core import logger, WEBUI_SK
+from astrbot.core import logger
 from astrbot.core.db import BaseDatabase
 from astrbot.core.utils.io import get_local_ip_addresses
+from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 
-DATAPATH = os.path.abspath(
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../data")
-)
+APP: Quart = None
 
 
 class AstrBotDashboard:
@@ -28,8 +27,9 @@ class AstrBotDashboard:
     ) -> None:
         self.core_lifecycle = core_lifecycle
         self.config = core_lifecycle.astrbot_config
-        self.data_path = os.path.abspath(os.path.join(DATAPATH, "dist"))
+        self.data_path = os.path.abspath(os.path.join(get_astrbot_data_path(), "dist"))
         self.app = Quart("dashboard", static_folder=self.data_path, static_url_path="/")
+        APP = self.app  # noqa
         self.app.config["MAX_CONTENT_LENGTH"] = (
             128 * 1024 * 1024
         )  # 将 Flask 允许的最大上传文件体大小设置为 128 MB
@@ -52,15 +52,34 @@ class AstrBotDashboard:
         self.chat_route = ChatRoute(self.context, db, core_lifecycle)
         self.tools_root = ToolsRoute(self.context, core_lifecycle)
         self.conversation_route = ConversationRoute(self.context, db, core_lifecycle)
+        self.file_route = FileRoute(self.context)
+
+        self.app.add_url_rule(
+            "/api/plug/<path:subpath>",
+            view_func=self.srv_plug_route,
+            methods=["GET", "POST"],
+        )
 
         self.shutdown_event = shutdown_event
+
+        self._init_jwt_secret()
+
+    async def srv_plug_route(self, subpath, *args, **kwargs):
+        """
+        插件路由
+        """
+        registered_web_apis = self.core_lifecycle.star_context.registered_web_apis
+        for api in registered_web_apis:
+            route, view_handler, methods, _ = api
+            if route == f"/{subpath}" and request.method in methods:
+                return await view_handler(*args, **kwargs)
+        return jsonify(Response().error("未找到该路由").__dict__)
 
     async def auth_middleware(self):
         if not request.path.startswith("/api"):
             return
-        if request.path == "/api/auth/login":
-            return
-        if request.path == "/api/chat/get_file":
+        allowed_endpoints = ["/api/auth/login", "/api/file"]
+        if any(request.path.startswith(prefix) for prefix in allowed_endpoints):
             return
         # claim jwt
         token = request.headers.get("Authorization")
@@ -71,7 +90,7 @@ class AstrBotDashboard:
         if token.startswith("Bearer "):
             token = token[7:]
         try:
-            payload = jwt.decode(token, WEBUI_SK, algorithms=["HS256"])
+            payload = jwt.decode(token, self._jwt_secret, algorithms=["HS256"])
             g.username = payload["username"]
         except jwt.ExpiredSignatureError:
             r = jsonify(Response().error("Token 过期").__dict__)
@@ -123,9 +142,21 @@ class AstrBotDashboard:
         except Exception as e:
             return f"获取进程信息失败: {str(e)}"
 
+    def _init_jwt_secret(self):
+        if not self.config.get("dashboard", {}).get("jwt_secret", None):
+            # 如果没有设置 JWT 密钥，则生成一个新的密钥
+            jwt_secret = os.urandom(32).hex()
+            self.config["dashboard"]["jwt_secret"] = jwt_secret
+            self.config.save_config()
+            logger.info("Initialized random JWT secret for dashboard.")
+        self._jwt_secret = self.config["dashboard"]["jwt_secret"]
+
     def run(self):
         ip_addr = []
-        port = self.core_lifecycle.astrbot_config["dashboard"].get("port", 6185)
+        if p := os.environ.get("DASHBOARD_PORT"):
+            port = p
+        else:
+            port = self.core_lifecycle.astrbot_config["dashboard"].get("port", 6185)
         host = self.core_lifecycle.astrbot_config["dashboard"].get("host", "0.0.0.0")
 
         logger.info(f"正在启动 WebUI, 监听地址: http://{host}:{port}")

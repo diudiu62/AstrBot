@@ -12,17 +12,6 @@ export const useCommonStore = defineStore({
     log_cache_max_len: 1000,
     startTime: -1,
 
-    tutorial_map: {
-      "qq_official_webhook": "https://astrbot.app/deploy/platform/qqofficial/webhook.html",
-      "qq_official": "https://astrbot.app/deploy/platform/qqofficial/websockets.html",
-      "aiocqhttp": "https://astrbot.app/deploy/platform/aiocqhttp/napcat.html",
-      "wecom": "https://astrbot.app/deploy/platform/wecom.html",
-      "gewechat": "https://astrbot.app/deploy/platform/gewechat.html",
-      "lark": "https://astrbot.app/deploy/platform/lark.html",
-      "telegram": "https://astrbot.app/deploy/platform/telegram.html",
-      "dingtalk": "https://astrbot.app/deploy/platform/dingtalk.html",
-    },
-
     pluginMarketData: [],
   }),
   actions: {
@@ -122,9 +111,6 @@ export const useCommonStore = defineStore({
         this.startTime = res.data.data.start_time
       })
     },
-    getTutorialLink(platform) {
-      return this.tutorial_map[platform]
-    },
     async getPluginCollections(force = false) {
       // 获取插件市场数据
       if (!force && this.pluginMarketData.length > 0) {
@@ -145,13 +131,14 @@ export const useCommonStore = defineStore({
               "tags": res.data.data[key]?.tags ? res.data.data[key].tags : [],
               "logo": res.data.data[key]?.logo ? res.data.data[key].logo : "",
               "pinned": res.data.data[key]?.pinned ? res.data.data[key].pinned : false,
+              "stars": res.data.data[key]?.stars ? res.data.data[key].stars : 0,
+              "updated_at": res.data.data[key]?.updated_at ? res.data.data[key].updated_at : "",
             })
           }
           this.pluginMarketData = data;
           return data;
         })
         .catch((err) => {
-          this.toast("获取插件市场数据失败: " + err, "error");
           return Promise.reject(err);
         });
     },

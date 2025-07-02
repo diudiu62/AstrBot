@@ -9,19 +9,17 @@ import astrbot.core.message.components as Comp
 from openai import AsyncOpenAI, AsyncAzureOpenAI
 from openai.types.chat.chat_completion import ChatCompletion
 
-# from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 from openai._exceptions import NotFoundError, UnprocessableEntityError
 from openai.lib.streaming.chat._completions import ChatCompletionStreamState
 from astrbot.core.utils.io import download_image_by_url
 from astrbot.core.message.message_event_result import MessageChain
 
-from astrbot.core.db import BaseDatabase
-from astrbot.api.provider import Provider, Personality
+from astrbot.api.provider import Provider
 from astrbot import logger
 from astrbot.core.provider.func_tool_manager import FuncCall
 from typing import List, AsyncGenerator
 from ..register import register_provider_adapter
-from astrbot.core.provider.entities import LLMResponse
+from astrbot.core.provider.entities import LLMResponse, ToolCallsResult
 
 
 @register_provider_adapter(
@@ -30,17 +28,13 @@ from astrbot.core.provider.entities import LLMResponse
 class ProviderOpenAIOfficial(Provider):
     def __init__(
         self,
-        provider_config: dict,
-        provider_settings: dict,
-        db_helper: BaseDatabase,
-        persistant_history=True,
-        default_persona: Personality = None,
+        provider_config,
+        provider_settings,
+        default_persona = None,
     ) -> None:
         super().__init__(
             provider_config,
             provider_settings,
-            persistant_history,
-            db_helper,
             default_persona,
         )
         self.chosen_api_key = None
@@ -195,7 +189,11 @@ class ProviderOpenAIOfficial(Provider):
             for tool_call in choice.message.tool_calls:
                 for tool in tools.func_list:
                     if tool.name == tool_call.function.name:
-                        args = json.loads(tool_call.function.arguments)
+                        # workaround for #1454
+                        if isinstance(tool_call.function.arguments, str):
+                            args = json.loads(tool_call.function.arguments)
+                        else:
+                            args = tool_call.function.arguments
                         args_ls.append(args)
                         func_name_ls.append(tool_call.function.name)
                         tool_call_ids.append(tool_call.id)
@@ -220,15 +218,15 @@ class ProviderOpenAIOfficial(Provider):
     async def _prepare_chat_payload(
         self,
         prompt: str,
-        session_id: str = None,
-        image_urls: List[str] = [],
-        func_tool: FuncCall = None,
-        contexts=[],
-        system_prompt=None,
-        tool_calls_result=None,
+        image_urls: list[str] | None = None,
+        contexts: list | None = None,
+        system_prompt: str | None = None,
+        tool_calls_result: ToolCallsResult | list[ToolCallsResult] | None = None,
         **kwargs,
     ) -> tuple:
         """准备聊天所需的有效载荷和上下文"""
+        if contexts is None:
+            contexts = []
         new_record = await self.assemble_context(prompt, image_urls)
         context_query = [*contexts, new_record]
         if system_prompt:
@@ -240,14 +238,18 @@ class ProviderOpenAIOfficial(Provider):
 
         # tool calls result
         if tool_calls_result:
-            context_query.extend(tool_calls_result.to_openai_messages())
+            if isinstance(tool_calls_result, ToolCallsResult):
+                context_query.extend(tool_calls_result.to_openai_messages())
+            else:
+                for tcr in tool_calls_result:
+                    context_query.extend(tcr.to_openai_messages())
 
         model_config = self.provider_config.get("model_config", {})
         model_config["model"] = self.get_model()
 
         payloads = {"messages": context_query, **model_config}
 
-        return payloads, context_query, func_tool
+        return payloads, context_query
 
     async def _handle_api_error(
         self,
@@ -337,20 +339,18 @@ class ProviderOpenAIOfficial(Provider):
 
     async def text_chat(
         self,
-        prompt: str,
-        session_id: str = None,
-        image_urls: List[str] = [],
-        func_tool: FuncCall = None,
-        contexts=[],
+        prompt,
+        session_id=None,
+        image_urls=None,
+        func_tool=None,
+        contexts=None,
         system_prompt=None,
         tool_calls_result=None,
         **kwargs,
     ) -> LLMResponse:
-        payloads, context_query, func_tool = await self._prepare_chat_payload(
+        payloads, context_query = await self._prepare_chat_payload(
             prompt,
-            session_id,
             image_urls,
-            func_tool,
             contexts,
             system_prompt,
             tool_calls_result,
@@ -362,7 +362,7 @@ class ProviderOpenAIOfficial(Provider):
         available_api_keys = self.api_keys.copy()
         chosen_key = random.choice(available_api_keys)
 
-        e = None
+        last_exception = None
         retry_cnt = 0
         for retry_cnt in range(max_retries):
             try:
@@ -376,6 +376,7 @@ class ProviderOpenAIOfficial(Provider):
                 payloads["messages"] = new_contexts
                 context_query = new_contexts
             except Exception as e:
+                last_exception = e
                 (
                     success,
                     chosen_key,
@@ -398,7 +399,9 @@ class ProviderOpenAIOfficial(Provider):
 
         if retry_cnt == max_retries - 1:
             logger.error(f"API 调用失败，重试 {max_retries} 次仍然失败。")
-            raise e
+            if last_exception is None:
+                raise Exception("未知错误")
+            raise last_exception
         return llm_response
 
     async def text_chat_stream(
@@ -413,11 +416,9 @@ class ProviderOpenAIOfficial(Provider):
         **kwargs,
     ) -> AsyncGenerator[LLMResponse, None]:
         """流式对话，与服务商交互并逐步返回结果"""
-        payloads, context_query, func_tool = await self._prepare_chat_payload(
+        payloads, context_query = await self._prepare_chat_payload(
             prompt,
-            session_id,
             image_urls,
-            func_tool,
             contexts,
             system_prompt,
             tool_calls_result,
@@ -428,7 +429,7 @@ class ProviderOpenAIOfficial(Provider):
         available_api_keys = self.api_keys.copy()
         chosen_key = random.choice(available_api_keys)
 
-        e = None
+        last_exception = None
         retry_cnt = 0
         for retry_cnt in range(max_retries):
             try:
@@ -443,6 +444,7 @@ class ProviderOpenAIOfficial(Provider):
                 payloads["messages"] = new_contexts
                 context_query = new_contexts
             except Exception as e:
+                last_exception = e
                 (
                     success,
                     chosen_key,
@@ -465,7 +467,9 @@ class ProviderOpenAIOfficial(Provider):
 
         if retry_cnt == max_retries - 1:
             logger.error(f"API 调用失败，重试 {max_retries} 次仍然失败。")
-            raise e
+            if last_exception is None:
+                raise Exception("未知错误")
+            raise last_exception
 
     async def _remove_image_from_context(self, contexts: List):
         """
@@ -505,7 +509,10 @@ class ProviderOpenAIOfficial(Provider):
     async def assemble_context(self, text: str, image_urls: List[str] = None) -> dict:
         """组装成符合 OpenAI 格式的 role 为 user 的消息段"""
         if image_urls:
-            user_content = {"role": "user", "content": [{"type": "text", "text": text if text else "[图片]"}]}
+            user_content = {
+                "role": "user",
+                "content": [{"type": "text", "text": text if text else "[图片]"}],
+            }
             for image_url in image_urls:
                 if image_url.startswith("http"):
                     image_path = await download_image_by_url(image_url)
