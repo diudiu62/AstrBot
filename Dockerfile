@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python -m pip install uv
+RUN python -m pip install uv -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 RUN uv pip install -r requirements.txt --no-cache-dir --system
 RUN uv pip install socksio uv pyffmpeg pilk --no-cache-dir --system
 
